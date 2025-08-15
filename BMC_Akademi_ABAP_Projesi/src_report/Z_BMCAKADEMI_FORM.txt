@@ -1,0 +1,304 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z_BMCAKADEMI_FORM
+*&---------------------------------------------------------------------*
+
+FORM zstudent_tbl.
+  DATA: lr_data TYPE REF TO data.
+  FIELD-SYMBOLS: <lt_data> TYPE STANDARD TABLE.
+  CREATE DATA lr_data TYPE STANDARD TABLE OF zstudent_tbl.
+  ASSIGN lr_data->* TO <lt_data>.
+  SELECT * FROM zstudent_tbl INTO TABLE <lt_data>.
+  PERFORM show_alv_with_cc USING 'ZSTUDENT_TBL'.
+ENDFORM.
+
+FORM show_alv_with_cc USING p_tabname TYPE tabname.
+
+  DATA: lr_data TYPE REF TO data.
+  FIELD-SYMBOLS: <lt_data> TYPE STANDARD TABLE.
+
+  CREATE DATA lr_data TYPE STANDARD TABLE OF (p_tabname).
+  ASSIGN lr_data->* TO <lt_data>.
+  SELECT * FROM (p_tabname) INTO TABLE <lt_data>.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CC_ALV'.
+  ENDIF.
+
+  IF go_grid IS INITIAL.
+    CREATE OBJECT go_grid
+      EXPORTING
+        i_parent = go_container.
+  ENDIF.
+
+  CALL METHOD go_grid->set_table_for_first_display
+    EXPORTING
+      i_structure_name = p_tabname
+    CHANGING
+      it_outtab        = <lt_data>.
+ENDFORM.
+
+FORM zbk_course_tl.
+
+  DATA: lr_data TYPE REF TO data.
+  FIELD-SYMBOLS: <lt_data> TYPE STANDARD TABLE.
+
+  CREATE DATA lr_data TYPE STANDARD TABLE OF zbk_course_tl.
+  ASSIGN lr_data->* TO <lt_data>.
+  SELECT * FROM zbk_course_tl INTO TABLE <lt_data>.
+
+  PERFORM show_alv_with_cc USING 'ZBK_COURSE_TL'.
+
+ENDFORM.
+
+FORM ztutor_tbl.
+
+  DATA: lr_data TYPE REF TO data.
+  FIELD-SYMBOLS: <lt_data> TYPE STANDARD TABLE.
+
+  CREATE DATA lr_data TYPE STANDARD TABLE OF ztutor_tbl.
+  ASSIGN lr_data->* TO <lt_data>.
+  SELECT * FROM ztutor_tbl INTO TABLE <lt_data>.
+
+  PERFORM show_alv_with_cc USING 'ZTUTOR_TBL'.
+
+ENDFORM.
+
+FORM show_selected_form USING p_tabname TYPE tabname.
+
+  DATA: lr_datal TYPE REF TO data.
+  FIELD-SYMBOLS: <lr_datal> TYPE STANDARD TABLE.
+
+  CREATE DATA lr_datal TYPE STANDARD TABLE OF (p_tabname).
+  ASSIGN lr_datal->* TO <lr_datal>.
+
+  IF p_tabname = 'ZSTUDENT_TBL'.
+    IF gv_std_num IS NOT INITIAL AND gv_std_name IS NOT INITIAL.
+      SELECT * FROM zstudent_tbl
+        INTO TABLE <lr_datal>
+        WHERE student_num = gv_std_num
+          AND student_name = gv_std_name.
+*    ELSE.
+*      MESSAGE 'Lütfen hem öğrenci numarası hem adı girin.' TYPE 'I'.
+*      RETURN.
+    ENDIF.
+
+  ELSEIF p_tabname = 'ZBK_COURSE_TL'.
+    IF gv_crs_id IS NOT INITIAL AND gv_crs_name IS NOT INITIAL.
+      SELECT * FROM zbk_course_tl
+        INTO TABLE <lr_datal>
+        WHERE course_id = gv_crs_id
+          AND course_name = gv_crs_name.
+*    ELSE.
+*      MESSAGE 'Lütfen hem kurs ID hem kurs adını girin.' TYPE 'I'.
+*      RETURN.
+    ENDIF.
+
+  ELSEIF p_tabname = 'ZTUTOR_TBL'.
+    IF gv_tut_or_id IS NOT INITIAL AND gv_tut_or_name IS NOT INITIAL.
+      SELECT * FROM ztutor_tbl
+        INTO TABLE <lr_datal>
+        WHERE tutor_id = gv_tut_or_id
+          AND tutor_name = gv_tut_or_name.
+*    ELSE.
+*      MESSAGE 'Lütfen hem eğitmen ID hem adı girin.' TYPE 'I'.
+*      RETURN.
+    ENDIF.
+ENDIF.
+    IF go_container IS INITIAL.
+      CREATE OBJECT go_container
+        EXPORTING
+          container_name = 'CC_ALV'.
+    ENDIF.
+    IF go_grid IS INITIAL.
+      CREATE OBJECT go_grid
+        EXPORTING
+          i_parent = go_container.
+    ENDIF.
+    DATA: LS_STABLE TYPE LVC_S_STBL.
+    ls_stable-row = 'X'.
+  ls_stable-col = 'X'.
+    CALL METHOD go_grid->set_table_for_first_display
+      EXPORTING
+        i_structure_name = p_tabname
+      CHANGING
+        it_outtab        = <lr_datal>.
+
+     CALL METHOD go_grid->refresh_table_display
+      EXPORTING
+        is_stable = LS_STABLE.
+ENDFORM.
+
+FORM show_selected_tutor.
+  DATA: lt_filtered TYPE STANDARD TABLE OF ztutor_tbl,
+        ls_tutor    TYPE ztutor_tbl.
+  SELECT * FROM ztutor_tbl INTO TABLE it_tutor.
+  CLEAR lt_filtered.
+  LOOP AT it_tutor INTO ls_tutor.
+    IF ( gv_tut_or_id IS INITIAL OR ls_tutor-tutor_id = gv_tut_or_id ) AND
+       ( gv_tut_or_name IS INITIAL OR ls_tutor-tutor_name CP gv_tut_or_name ).
+      APPEND ls_tutor TO lt_filtered.
+    ENDIF.
+  ENDLOOP.
+  gt_tutor_table = lt_filtered.
+  IF go_grid IS BOUND.
+    CALL METHOD go_grid->refresh_table_display
+      EXCEPTIONS
+        finished = 1
+        OTHERS   = 2.
+  ENDIF.
+ENDFORM.
+
+FORM show_selected_course.
+
+  DATA: lt_filtered TYPE STANDARD TABLE OF zbk_course_tl,
+        ls_course   TYPE zbk_course_tl.
+
+  DATA: lv_id_match       TYPE abap_bool,
+        lv_name_match     TYPE abap_bool,
+        lower_course_name TYPE string,
+        lower_input       TYPE string.
+
+  SELECT * FROM zbk_course_tl INTO TABLE it_course.
+
+  CLEAR lt_filtered.
+
+  LOOP AT it_course INTO ls_course.
+
+    lv_id_match   = abap_true.
+    lv_name_match = abap_true.
+
+    IF gv_crs_id IS NOT INITIAL.
+      IF ls_course-course_id CP '*' && gv_crs_id && '*'.
+        lv_id_match = abap_true.
+      ELSE.
+        lv_id_match = abap_false.
+      ENDIF.
+    ENDIF.
+
+    IF gv_crs_name IS NOT INITIAL.
+      lower_course_name = to_lower( ls_course-course_name ).
+      lower_input        = to_lower( gv_crs_name ).
+
+      IF lower_course_name CP '*' && lower_input && '*'.
+        lv_name_match = abap_true.
+      ELSE.
+        lv_name_match = abap_false.
+      ENDIF.
+    ENDIF.
+    IF lv_id_match = abap_true AND lv_name_match = abap_true.
+      APPEND ls_course TO lt_filtered.
+    ENDIF.
+  ENDLOOP.
+  gt_course_table = lt_filtered.
+  IF go_grid IS BOUND.
+    CALL METHOD go_grid->refresh_table_display
+      EXCEPTIONS
+        finished = 1
+        OTHERS   = 2.
+  ENDIF.
+ENDFORM.
+
+FORM build_fieldcat_ders.
+  CLEAR gt_fieldcat_ders.
+  PERFORM add_field_to_catalog USING:
+    'STUDENT_ID'    'Student ID',
+    'STUDENT_NAME'  'Student Name',
+    'COURSE_ID'     'Course ID',
+    'COURSE_NAME'   'Course Name'.
+ENDFORM.
+
+FORM add_field_to_catalog USING VALUE(fieldname) VALUE(coltext).
+  CLEAR gs_fieldcat_ders.
+  gs_fieldcat_ders-fieldname = fieldname.
+  gs_fieldcat_ders-coltext   = coltext.
+  APPEND gs_fieldcat_ders TO gt_fieldcat_ders.
+ENDFORM.
+
+FORM build_fieldcat_ders_subs.
+  CLEAR: gt_fcat_subs, gs_fcat_subs.
+  gs_fcat_subs-fieldname = 'STUDENT_ID'.
+  gs_fcat_subs-coltext   = 'Student ID'.
+  gs_fcat_subs-outputlen = 10.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  CLEAR gs_fcat_subs.
+  gs_fcat_subs-fieldname = 'STUDENT_NAME'.
+  gs_fcat_subs-coltext   = 'Student Name'.
+  gs_fcat_subs-outputlen = 20.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  CLEAR gs_fcat_subs.
+  gs_fcat_subs-fieldname = 'COURSE_ID'.
+  gs_fcat_subs-coltext   = 'Course ID'.
+  gs_fcat_subs-outputlen = 10.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  CLEAR gs_fcat_subs.
+  gs_fcat_subs-fieldname = 'COURSE_NAME'.
+  gs_fcat_subs-coltext   = 'Course Name'.
+  gs_fcat_subs-outputlen = 20.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+ENDFORM.
+
+
+FORM build_fieldcat_student.
+
+  CLEAR: gs_fcat_subs, gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'STUDENT_NUM'.
+  gs_fcat_subs-coltext   = 'Student No'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'STUDENT_NAME'.
+  gs_fcat_subs-coltext   = 'Name'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'STUDENT_SUR'.
+  gs_fcat_subs-coltext   = 'Surname'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'STUDENT_GENDER'.
+  gs_fcat_subs-coltext   = 'Gender'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'STUDENT_AGE'.
+  gs_fcat_subs-coltext   = 'Age'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'COURSE_ID'.
+  gs_fcat_subs-coltext   = 'Course ID'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+
+ENDFORM.
+
+FORM build_fieldcat_tutor_course.
+
+  CLEAR: gt_fcat_subs, gs_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'TUTOR_ID'.
+  gs_fcat_subs-coltext   = 'Tutor ID'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+  CLEAR gs_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'TUTOR_NAME'.
+  gs_fcat_subs-coltext   = 'Tutor Name'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+  CLEAR gs_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'COURSE_ID'.
+  gs_fcat_subs-coltext   = 'Course ID'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+  CLEAR gs_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'COURSE_NAME'.
+  gs_fcat_subs-coltext   = 'Course Name'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+  CLEAR gs_fcat_subs.
+
+  gs_fcat_subs-fieldname = 'COURSE_CREDIT'.
+  gs_fcat_subs-coltext   = 'Credit'.
+  APPEND gs_fcat_subs TO gt_fcat_subs.
+  CLEAR gs_fcat_subs.
+ENDFORM.

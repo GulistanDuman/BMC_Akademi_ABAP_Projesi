@@ -1,0 +1,141 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z_BMCAKADEMI_PBO
+*&---------------------------------------------------------------------*
+
+MODULE pbo_0104 OUTPUT.
+  LOOP AT SCREEN.
+    IF screen-name = 'RB_STD' OR screen-name = 'RB_TUT' OR screen-name = 'RB_CRS'.
+      screen-invisible = '0'.
+      screen-active = '1'.
+      MODIFY SCREEN.
+      CONTINUE.
+    ENDIF.
+    IF screen-name = 'TXT_STD' OR
+       screen-name = 'TXT_CRS' OR
+       screen-name = 'BTN_ADD7' OR
+       screen-name = 'BTN_ADD1' OR
+       screen-name = 'BTN_ADD' OR
+       screen-name = 'TXT_TUT'.
+      screen-invisible = '0'.
+      screen-active = '1'.
+      MODIFY SCREEN.
+      CONTINUE.
+    ENDIF.
+    screen-invisible = '1'.
+    screen-active = '0'.
+    IF gv_form_visible = 'X'.
+      IF rb_std = 'X' AND screen-name CP 'GV_STD_*'.
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+      IF rb_tut = 'X' AND screen-name CP 'GV_TUT_*'.
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+      IF rb_crs = 'X' AND screen-name CP 'GV_CRS_*'.
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+    ELSE.
+      IF screen-name CP 'GV_STD_*' OR
+         screen-name CP 'GV_TUT_*' OR
+         screen-name CP 'GV_CRS_*'.
+        screen-invisible = '1'.
+        screen-active    = '0'.
+      ENDIF.
+    ENDIF.
+    MODIFY SCREEN.
+  ENDLOOP.
+ENDMODULE.
+
+MODULE pbo_0106 OUTPUT.
+  LOOP AT SCREEN.
+    IF screen-name CP 'RB_*' OR screen-name = 'rb_dell*'.
+      screen-invisible = '0'.
+      screen-active    = '1'.
+      MODIFY SCREEN.
+      CONTINUE.
+    ENDIF.
+    screen-invisible = '1'.
+    screen-active    = '0'.
+    IF gv_del_form_visible = 'X'.
+
+      IF rb_std_del = 'X' AND ( screen-name CP 'GV_STD_*' OR screen-name CP 'TXT_STD_*' ).
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+
+      IF rb_crs_del = 'X' AND ( screen-name CP 'GV_CRS_*' OR screen-name CP 'TXT_CRS_*' ).
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+
+      IF rb_tut_del = 'X' AND ( screen-name CP 'GV_TUT_*' OR screen-name CP 'TXT_TUT_*' ).
+        screen-invisible = '0'.
+        screen-active    = '1'.
+      ENDIF.
+    ENDIF.
+    MODIFY SCREEN.
+  ENDLOOP.
+ENDMODULE.
+
+MODULE pbo_0107 OUTPUT.
+  LOOP AT SCREEN.
+    screen-invisible = '1'.
+    screen-active    = '0'.
+
+    IF screen-name = 'RB_AA' OR
+     screen-name = 'RB_SS' OR
+     screen-name = 'RB_PP' OR
+     screen-name = 'RB_CC' OR
+     screen-name = 'RB_EE' OR
+     screen-name = 'RB_ZZ' OR
+     screen-name = 'RB_STD_1' OR
+     screen-name = 'RB_CRS_6' OR
+     screen-name = 'RB_TUT_2' OR
+     screen-name = 'BT_LIST'.
+      screen-invisible = '0'.
+      screen-active    = '1'.
+      MODIFY SCREEN.
+      CONTINUE.
+    ENDIF.
+    IF rb_std_1 = 'X' AND ( screen-name CP 'GV_STD_*' OR screen-name CP 'TXT_STD_*' ).
+      screen-invisible = '0'.
+      screen-active    = '1'.
+    ELSEIF rb_crs_6 = 'X' AND ( screen-name CP 'GV_CRS_*' OR screen-name CP 'TXT_CRS_*' ).
+      screen-invisible = '0'.
+      screen-active    = '1'.
+    ELSEIF rb_tut_2 = 'X' AND ( screen-name CP 'GV_TUT_*' OR screen-name CP 'TXT_TUT_*' ).
+      screen-invisible = '0'.
+      screen-active    = '1'.
+    ENDIF.
+    MODIFY SCREEN.
+  ENDLOOP.
+  IF gv_show = 'X'.
+  ENDIF.
+ENDMODULE.
+
+MODULE pbo_0109 OUTPUT.
+
+  IF go_container_subs IS BOUND.
+    CALL METHOD go_container_subs->free.
+    CLEAR go_container_subs.
+  ENDIF.
+
+  CREATE OBJECT go_container_subs
+    EXPORTING
+      container_name = 'CC_ALV4'.
+
+  CREATE OBJECT go_grid_subs
+    EXPORTING
+      i_parent = go_container_subs.
+
+  PERFORM build_fieldcat_tutor_course.
+
+  CALL METHOD go_grid_subs->set_table_for_first_display
+    EXPORTING
+      i_structure_name = 'TY_TUTOR_COURSE'
+    CHANGING
+      it_outtab        = gt_tutor_courses_final
+      it_fieldcatalog  = gt_fcat_subs.
+ENDMODULE.

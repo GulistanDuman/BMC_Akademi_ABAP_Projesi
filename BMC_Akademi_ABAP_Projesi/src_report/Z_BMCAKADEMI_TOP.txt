@@ -1,0 +1,118 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z_BMCAKADEMI_TOP
+*&---------------------------------------------------------------------*
+TYPES: BEGIN OF ty_tutor_course,
+         tutor_id      TYPE zyk_ders_tbl1-tutor_id,
+         tutor_name    TYPE zyk_ders_tbl1-tutor_name,
+         course_id     TYPE zyk_ders_tbl1-course_id,
+         course_name   TYPE zbk_course_tl-course_name,
+         course_credit TYPE zbk_course_tl-course_credit,
+       END OF ty_tutor_course.
+TYPES: BEGIN OF ty_student_course,
+         student_num    TYPE zstudent_tbl-student_num,
+         student_name   TYPE zstudent_tbl-student_name,
+         student_sur    TYPE zstudent_tbl-student_sur,
+         student_gender TYPE zstudent_tbl-student_gender,
+         student_age    TYPE zstudent_tbl-student_age,
+         course_id      TYPE zbk_course_tl-course_id,
+         course_name    TYPE zbk_course_tl-course_name,
+       END OF ty_student_course.
+
+DATA: gv_crs_id       TYPE zbk_course_tl-course_id,
+      gv_crs_name     TYPE zbk_course_tl-course_name,
+      gv_crs_credit   TYPE zbk_course_tl-course_credit,
+      gv_crs_tutor_id TYPE ztutor_tbl-tutor_id.
+
+DATA: gt_fcat_tutor_courses TYPE lvc_t_fcat.
+
+
+DATA: wa_student_acc TYPE zstudent_account,
+      wa_student     TYPE zstudent_tbl,
+      it_student     TYPE STANDARD TABLE OF zstudent_tbl.
+
+
+DATA: it_course TYPE STANDARD TABLE OF zbk_course_tl,
+      wa_course TYPE zbk_course_tl.
+
+DATA: it_tutor TYPE STANDARD TABLE OF ztutor_tbl,
+      wa_tutor TYPE ztutor_tbl.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_grid      TYPE REF TO cl_gui_alv_grid,
+      gt_table     TYPE STANDARD TABLE OF zstudent_tbl,
+      gt_fieldcat  TYPE lvc_t_fcat,
+      gs_fieldcat  TYPE lvc_s_fcat.
+
+DATA: rb_std_del TYPE c LENGTH 1,
+      rb_crs_del TYPE c LENGTH 1,
+      rb_tut_del TYPE c LENGTH 1.
+
+DATA: gv_del_form_visible TYPE c LENGTH 1.
+
+DATA: gt_fieldcat_course TYPE lvc_t_fcat,
+      gt_fieldcat_tutor  TYPE lvc_t_fcat.
+
+DATA: gt_course_table  TYPE STANDARD TABLE OF zbk_course_tl,
+      gt_tutor_table   TYPE STANDARD TABLE OF ztutor_tbl,
+      gt_student_table TYPE STANDARD TABLE OF zstudent_tbl.
+
+DATA: gv_new_course_id   TYPE zbk_course_tl-course_id,
+      gv_new_course_name TYPE zbk_course_tl-course_name.
+
+DATA: gt_dersler       TYPE STANDARD TABLE OF zyk_ders_tbl,
+      gs_fieldcat_ders TYPE lvc_s_fcat,
+      gt_fieldcat_ders TYPE lvc_t_fcat.
+
+DATA: go_container_subs TYPE REF TO cl_gui_custom_container,
+      go_grid_subs      TYPE REF TO cl_gui_alv_grid,
+      gt_ders_subs      TYPE STANDARD TABLE OF zyk_ders_tbl,
+      gt_fcat_subs      TYPE lvc_t_fcat,
+      gs_fcat_subs      TYPE lvc_s_fcat.
+
+DATA: gt_tutor_courses_final TYPE STANDARD TABLE OF ty_tutor_course,
+      wa_tutor_course        TYPE ty_tutor_course.
+
+TYPES: BEGIN OF ty_combined_course,
+         course_id    TYPE zyk_ders_tbl-course_id,
+         course_name  TYPE zyk_ders_tbl-course_name,
+         student_id   TYPE zyk_ders_tbl-student_id,
+         student_name TYPE zyk_ders_tbl-student_name,
+       END OF ty_combined_course.
+
+DATA: gt_all_courses TYPE STANDARD TABLE OF ty_combined_course,
+      wa_comb_course TYPE ty_combined_course.
+
+DATA: wa_ders TYPE zyk_ders_tbl.
+
+DATA: gt_student_course TYPE STANDARD TABLE OF ty_student_course WITH EMPTY KEY.
+DATA: gv_user    TYPE char30,
+      gv_passwrd TYPE char20.
+DATA: rb_student TYPE c LENGTH 1,
+      rb_course  TYPE c LENGTH 1,
+      rb_teacher TYPE c LENGTH 1.
+DATA: gv_form_visible TYPE c LENGTH 1.
+
+DATA: gv_show TYPE c LENGTH 1.
+DATA: rb_std TYPE c LENGTH 1,
+      rb_tut TYPE c LENGTH 1,
+      rb_crs TYPE c LENGTH 1.
+
+DATA: rb_std_1 TYPE c LENGTH 1,
+      rb_tut_2 TYPE c LENGTH 1,
+      rb_crs_6 TYPE c LENGTH 1.
+DATA: gt_fcat TYPE lvc_t_fcat.
+
+DATA: gv_std_num     TYPE zstudent_tbl-student_num,
+      gv_std_name    TYPE zstudent_tbl-student_name,
+      gv_std_avg     TYPE zstudent_tbl-student_average,
+      gv_std_gen     TYPE zstudent_tbl-student_gender,
+      gv_std_grade   TYPE zstudent_tbl-student_grade,
+      gv_std_courses TYPE zstudent_tbl-course_id,
+      gv_std_surname TYPE zstudent_tbl-student_sur,
+      gv_std_age     TYPE zstudent_tbl-student_age.
+
+DATA: gv_tut_or_id      TYPE ztutor_tbl-tutor_id,
+      gv_tut_or_name    TYPE ztutor_tbl-tutor_name,
+      gv_tut_or_surname TYPE ztutor_tbl-tutor_surname,
+      gv_tut_or_brans   TYPE zbk_course_tl-course_name,
+      gv_tut_or_course  TYPE zbk_course_tl-course_id.

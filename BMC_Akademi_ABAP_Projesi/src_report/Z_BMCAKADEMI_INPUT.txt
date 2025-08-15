@@ -1,0 +1,702 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z_BMCAKADEMI_INPUT
+*&---------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN '&EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&ADMN'.
+      SELECT SINGLE * INTO wa_student_acc FROM zstudent_account
+        WHERE user_name = gv_user
+        AND password = gv_passwrd.
+
+      IF sy-subrc = 0.
+        IF gv_user = 'ADMIN' AND gv_passwrd = 'ADMIN'.
+          MESSAGE 'Admin girişi başarılı.' TYPE 'S'.
+          CALL SCREEN '0103'.
+        ELSE.
+          MESSAGE 'Bu kullanıcı admin değil!' TYPE 'I'.
+        ENDIF.
+      ELSE.
+        MESSAGE 'Hatalı admin bilgisi!' TYPE 'I'.
+      ENDIF.
+    WHEN '&LOG'.
+
+      IF gv_user = 'ADMIN'.
+        MESSAGE 'Admin kullanıcı normal Login butonundan giriş yapamaz! Lütfen Admin Login butonunu kullanın.' TYPE 'I'.
+        EXIT.
+      ENDIF.
+
+      SELECT SINGLE * INTO wa_student_acc FROM zstudent_account
+           WHERE user_name = gv_user.
+
+      IF sy-subrc = 0.
+        IF wa_student_acc-password = gv_passwrd.
+          MESSAGE 'Giriş Başarılı.' TYPE 'S'.
+          CALL SCREEN '0101'.
+        ELSE.
+          MESSAGE 'Incorrect password!' TYPE 'I'.
+        ENDIF.
+      ELSE.
+        MESSAGE 'Kullanıcı bulunamadı. Lütfen kayıt olun.' TYPE 'I'.
+      ENDIF.
+    WHEN '&RGT'.
+      wa_student_acc-user_name = gv_user.
+      wa_student_acc-password = gv_passwrd.
+      INSERT zstudent_account FROM wa_student_acc.
+      IF sy-subrc = 0.
+        COMMIT WORK.
+        MESSAGE 'NEW USER REGISTERED.' TYPE 'S'.
+        CALL SCREEN '0101'.
+      ELSE.
+        MESSAGE 'Kayıt Yapılamadı.' TYPE 'I'.
+      ENDIF.
+
+
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0101 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN '&EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&HKMZD'.
+      CALL SCREEN '0102'.
+    WHEN '&EGT'.
+      CALL SCREEN '0110'.
+    WHEN '&NEW'.
+      CALL SCREEN '0111'.
+    WHEN '&MMBR'.
+      CALL SCREEN '0112'.
+    WHEN '&PRJ'.
+      CALL SCREEN '0113'.
+    WHEN '&ILT'.
+      CALL SCREEN '0114'.
+    WHEN '&SUBS5'.
+      CALL SCREEN  '0108'.
+
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0102 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN '&EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CRS'.
+      CALL SCREEN '0104'.
+    WHEN '&LST'.
+      gv_show = 'X'.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0103 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN '&EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&SHW'.
+      CALL SCREEN '0105'.
+    WHEN '&MNU'.
+      CALL SCREEN '0101'.
+    WHEN '&CRS'.
+      CALL SCREEN '0104'.
+    WHEN '&DELETE'.
+      CALL SCREEN '0106'.
+    WHEN '&MAIN'.
+      CALL SCREEN '0107'.
+    WHEN '&SBSS'.
+      CALL SCREEN '0108'.
+    WHEN '&SBSTUT'.
+      CALL SCREEN '0109'.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0104 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&ADD2'.
+      IF gv_form_visible IS INITIAL.
+        gv_form_visible = 'X'.
+        gv_show = 'X'.
+      ELSE.
+        IF rb_std = 'X'.
+          gv_crs_id = gv_std_courses.
+          IF gv_crs_id IS INITIAL.
+            MESSAGE 'Kurs ID boş olamaz! Lütfen geçerli bir kurs ID girin.' TYPE 'I'.
+            EXIT.
+          ENDIF.
+          SELECT SINGLE * INTO wa_student FROM zstudent_tbl WHERE student_num = gv_std_num.
+          IF sy-subrc = 0.
+            MESSAGE 'Bu öğrenci zaten kayıtlı!' TYPE 'I'.
+            EXIT.
+          ENDIF.
+          wa_student-student_num     = gv_std_num.
+          wa_student-student_name    = gv_std_name.
+          wa_student-student_sur     = gv_std_surname.
+          wa_student-student_gender  = gv_std_gen.
+          wa_student-student_age     = gv_std_age.
+          wa_student-student_average = gv_std_avg.
+          wa_student-student_grade   = gv_std_grade.
+          wa_student-course_id       = gv_crs_id.
+          APPEND wa_student TO gt_student_table.
+          INSERT zstudent_tbl FROM wa_student.
+          IF sy-subrc = 0.
+            COMMIT WORK.
+            MESSAGE 'Öğrenci başarıyla eklendi.' TYPE 'S'.
+            CLEAR gv_form_visible.
+            CLEAR gv_show.
+          ELSE.
+            MESSAGE 'Öğrenci eklenemedi!' TYPE 'I'.
+          ENDIF.
+        ELSEIF rb_crs = 'X'.
+          wa_course-course_id     = gv_crs_id.
+          wa_course-course_name   = gv_crs_name.
+          wa_course-course_credit = gv_crs_credit.
+          wa_course-tutor_id      = gv_crs_tutor_id.
+          APPEND wa_course TO gt_course_table.
+          INSERT zbk_course_tl FROM wa_course.
+          IF sy-subrc = 0.
+            COMMIT WORK.
+            MESSAGE 'Ders başarıyla eklendi.' TYPE 'S'.
+            CLEAR gv_form_visible.
+            CLEAR gv_show.
+          ELSE.
+            MESSAGE 'Ders eklenemedi!' TYPE 'I'.
+          ENDIF.
+        ELSEIF rb_tut = 'X'.
+          wa_tutor-tutor_id      = gv_tut_or_id.
+          wa_tutor-tutor_name    = gv_tut_or_name.
+          wa_tutor-tutor_surname = gv_tut_or_surname.
+          wa_tutor-tutor_brans   = gv_tut_or_brans.
+          wa_tutor-course_id     = gv_tut_or_course.
+          APPEND wa_tutor TO gt_tutor_table.
+          INSERT ztutor_tbl FROM wa_tutor.
+          IF sy-subrc = 0.
+            COMMIT WORK.
+            MESSAGE 'Öğretmen başarıyla eklendi.' TYPE 'S'.
+            CLEAR gv_form_visible.
+            CLEAR gv_show.
+          ELSE.
+            MESSAGE 'Öğretmen eklenemedi!' TYPE 'I'.
+          ENDIF.
+        ELSE.
+          MESSAGE 'Lütfen önce hangi türü ekleyeceğinizi seçin.' TYPE 'I'.
+        ENDIF.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0105 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN '&EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&SHOW'.
+      IF rb_student = 'X'.
+        PERFORM show_alv_with_cc USING 'ZSTUDENT_TBL'.
+      ELSEIF rb_course = 'X'.
+        PERFORM show_alv_with_cc USING 'ZBK_COURSE_TL'.
+      ELSEIF rb_teacher = 'X'.
+        PERFORM show_alv_with_cc USING 'ZTUTOR_TBL'.
+      ELSE.
+        MESSAGE 'Lütfen bir tablo seçiniz!' TYPE 'I'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0106 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&RB_DELL'.
+      IF gv_del_form_visible IS INITIAL.
+        gv_del_form_visible = 'X'.
+        EXIT.
+      ENDIF.
+      IF rb_std_del = 'X'.
+        DELETE FROM zstudent_tbl
+          WHERE student_num = gv_std_num
+            AND student_name = gv_std_name.
+        IF sy-subrc = 0.
+          COMMIT WORK.
+          MESSAGE 'Öğrenci başarıyla silindi.' TYPE 'S'.
+          CLEAR gv_del_form_visible.
+        ELSE.
+          MESSAGE 'Öğrenci bulunamadı veya silinemedi!' TYPE 'I'.
+        ENDIF.
+      ELSEIF rb_crs_del = 'X'.
+        DELETE FROM zbk_course_tl WHERE course_id = gv_crs_id.
+        IF sy-subrc = 0.
+          COMMIT WORK.
+          MESSAGE 'Ders başarıyla silindi.' TYPE 'S'.
+          CLEAR gv_del_form_visible.
+        ELSE.
+          MESSAGE 'Ders bulunamadı veya silinemedi!' TYPE 'I'.
+        ENDIF.
+      ELSEIF rb_tut_del = 'X'.
+        DELETE FROM ztutor_tbl WHERE tutor_id = gv_tut_or_id AND tutor_name = gv_tut_or_name.
+        IF sy-subrc = 0.
+          COMMIT WORK.
+          MESSAGE 'Öğretmen başarıyla silindi.' TYPE 'S'.
+          CLEAR gv_del_form_visible.
+        ELSE.
+          MESSAGE 'Öğretmen bulunamadı veya silinemedi!' TYPE 'I'.
+        ENDIF.
+      ELSE.
+        MESSAGE 'Lütfen önce silmek istediğiniz türü seçin.' TYPE 'I'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+
+MODULE user_command_0107 INPUT.
+
+DATA: lt_dynpread TYPE STANDARD TABLE OF dynpread,
+      ls_dynpread TYPE dynpread.
+
+CLEAR lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_STD_NUM'.
+APPEND ls_dynpread TO lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_STD_NAME'.
+APPEND ls_dynpread TO lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_CRS_ID'.
+APPEND ls_dynpread TO lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_CRS_NAME'.
+APPEND ls_dynpread TO lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_TUT_OR_ID'.
+APPEND ls_dynpread TO lt_dynpread.
+
+ls_dynpread-fieldname = 'GV_TUT_OR_NAME'.
+APPEND ls_dynpread TO lt_dynpread.
+
+CALL FUNCTION 'DYNP_VALUES_READ'
+  EXPORTING
+    dyname     = sy-repid
+    dynumb     = sy-dynnr
+  TABLES
+    dynpfields = lt_dynpread.
+
+LOOP AT lt_dynpread INTO ls_dynpread.
+  CASE ls_dynpread-fieldname.
+    WHEN 'GV_STD_NUM'.
+      gv_std_num = ls_dynpread-fieldvalue.
+    WHEN 'GV_STD_NAME'.
+      gv_std_name = ls_dynpread-fieldvalue.
+    WHEN 'GV_CRS_ID'.
+      gv_crs_id = ls_dynpread-fieldvalue.
+    WHEN 'GV_CRS_NAME'.
+      gv_crs_name = ls_dynpread-fieldvalue.
+    WHEN 'GV_TUT_OR_ID'.
+      gv_tut_or_id = ls_dynpread-fieldvalue.
+    WHEN 'GV_TUT_OR_NAME'.
+      gv_tut_or_name = ls_dynpread-fieldvalue.
+  ENDCASE.
+ENDLOOP.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&LST'.
+      IF gv_show IS INITIAL.
+        LOOP AT SCREEN.
+          screen-invisible = '1'.
+          screen-active    = '0'.
+          IF screen-name = 'RB_AA' OR screen-name = 'RB_SS' OR screen-name = 'RB_PP' OR
+             screen-name = 'RB_CC' OR screen-name = 'RB_EE' OR screen-name = 'RB_ZZ' OR
+             screen-name = 'RB_STD_1' OR screen-name = 'RB_CRS_6' OR screen-name = 'RB_TUT_2' OR
+             screen-name = 'BT_LIST'.
+            screen-invisible = '0'.
+            screen-active    = '1'.
+            MODIFY SCREEN.
+            CONTINUE.
+          ENDIF.
+          IF rb_std_1 = 'X' AND ( screen-name CP 'GV_STD_*' OR screen-name CP 'TXT_STD_*' ).
+            screen-invisible = '0'.
+            screen-active    = '1'.
+
+          ELSEIF rb_crs_6 = 'X' AND ( screen-name CP 'GV_CRS_*' OR screen-name CP 'TXT_CRS_*' ).
+            screen-invisible = '0'.
+            screen-active    = '1'.
+
+          ELSEIF rb_tut_2 = 'X' AND ( screen-name CP 'GV_TUT_*' OR screen-name CP 'TXT_TUT_*' ).
+            screen-invisible = '0'.
+            screen-active    = '1'.
+          ENDIF.
+          MODIFY SCREEN.
+        ENDLOOP.
+        gv_show = 'X'.
+      ELSE.
+        IF rb_std_1 = 'X'.
+          IF gv_std_num IS NOT INITIAL AND gv_std_name IS NOT INITIAL.
+            PERFORM show_selected_form USING 'ZSTUDENT_TBL'.
+*          ELSE.
+*            MESSAGE 'Lütfen öğrenci için en az bir alan girin.' TYPE 'I'.
+          ENDIF.
+        ELSEIF rb_crs_6 = 'X'.
+          IF gv_crs_id IS NOT INITIAL AND gv_crs_name IS NOT INITIAL.
+            PERFORM show_selected_form USING 'ZBK_COURSE_TL'.
+*          ELSE.
+*            MESSAGE 'Lütfen kurs için en az bir alan girin.' TYPE 'I'.
+          ENDIF.
+        ELSEIF rb_tut_2 = 'X'.
+          IF gv_tut_or_id IS NOT INITIAL AND gv_tut_or_name IS NOT INITIAL.
+            PERFORM show_selected_form USING 'ZTUTOR_TBL'.
+*          ELSE.
+*            MESSAGE 'Lütfen eğitmen için en az bir alan girin.' TYPE 'I'.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0108 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&SHWSC'.
+      IF NOT gv_std_num IS INITIAL AND
+         NOT gv_std_name IS INITIAL AND
+         gv_crs_id IS INITIAL AND
+         gv_crs_name IS INITIAL AND
+         gv_tut_or_id IS INITIAL.
+        SELECT * FROM zyk_ders_tbl
+          INTO TABLE gt_ders_subs
+          WHERE student_id = gv_std_num.
+        IF go_container_subs IS BOUND.
+          CALL METHOD go_container_subs->free.
+          CLEAR go_container_subs.
+        ENDIF.
+        CREATE OBJECT go_container_subs
+          EXPORTING
+            container_name = 'CC_ALV2'.
+        CREATE OBJECT go_grid_subs
+          EXPORTING
+            i_parent = go_container_subs.
+        PERFORM build_fieldcat_ders_subs.
+        CALL METHOD go_grid_subs->set_table_for_first_display
+          EXPORTING
+            i_structure_name = 'ZYK_DERS_TBL'
+          CHANGING
+            it_outtab        = gt_ders_subs
+            it_fieldcatalog  = gt_fcat_subs.
+      ELSE.
+        MESSAGE 'Sadece Student ID ve Name alanlarını doldurmalısınız!' TYPE 'I'.
+        RETURN.
+      ENDIF.
+    WHEN '&SBS1'.
+      SELECT SINGLE student_name
+        INTO gv_std_name
+        FROM zstudent_tbl
+        WHERE student_num = gv_std_num.
+      IF gv_std_name IS INITIAL.
+        MESSAGE 'Öğrenci bulunamadı.' TYPE 'I'.
+        EXIT.
+      ENDIF.
+      SELECT SINGLE course_name
+        INTO gv_new_course_name
+        FROM zbk_course_tl
+        WHERE course_id = gv_crs_id.
+      IF gv_new_course_name IS INITIAL.
+        MESSAGE 'Kurs bulunamadı.' TYPE 'I'.
+        EXIT.
+      ENDIF.
+      SELECT SINGLE *
+        INTO wa_ders
+        FROM zyk_ders_tbl
+        WHERE student_id = gv_std_num
+          AND course_id  = gv_crs_id.
+      IF sy-subrc = 0.
+        MESSAGE 'Bu öğrenci bu kursa zaten kayıtlı!' TYPE 'I'.
+        EXIT.
+      ENDIF.
+      CLEAR wa_ders.
+      wa_ders-student_id   = gv_std_num.
+      wa_ders-student_name = gv_std_name.
+      wa_ders-course_id    = gv_crs_id.
+      wa_ders-course_name  = gv_new_course_name.
+
+      INSERT zyk_ders_tbl FROM wa_ders.
+
+      IF sy-subrc = 0.
+        COMMIT WORK.
+        MESSAGE 'Öğrenci kursa başarıyla kaydedildi.' TYPE 'S'.
+      ELSE.
+        MESSAGE 'Kayıt başarısız!' TYPE 'I'.
+        EXIT.
+      ENDIF.
+
+      CLEAR gt_all_courses.
+
+      SELECT * FROM zyk_ders_tbl
+     INTO TABLE @DATA(lt_ders)
+     WHERE student_id = @gv_std_num.
+
+      LOOP AT lt_ders INTO DATA(ls_ders).
+        wa_comb_course-course_id    = ls_ders-course_id.
+        wa_comb_course-course_name  = ls_ders-course_name.
+        wa_comb_course-student_id   = ls_ders-student_id.
+        wa_comb_course-student_name = ls_ders-student_name.
+        APPEND wa_comb_course TO gt_all_courses.
+      ENDLOOP.
+
+      SELECT SINGLE course_id
+      INTO @DATA(lv_course_id_std)
+      FROM zstudent_tbl
+      WHERE student_num = @gv_std_num.
+
+      IF sy-subrc = 0 AND NOT lv_course_id_std IS INITIAL.
+        SELECT SINGLE course_name
+          INTO @DATA(lv_course_name_std)
+          FROM zbk_course_tl
+          WHERE course_id = @lv_course_id_std.
+
+        wa_comb_course-course_id    = lv_course_id_std.
+        wa_comb_course-course_name  = lv_course_name_std.
+        wa_comb_course-student_id   = gv_std_num.
+        wa_comb_course-student_name = gv_std_name.
+        APPEND wa_comb_course TO gt_all_courses.
+      ENDIF.
+
+      " 6. ALV container'ı hazırla
+      IF go_container_subs IS BOUND.
+        CALL METHOD go_container_subs->free.
+        CLEAR go_container_subs.
+      ENDIF.
+
+      CREATE OBJECT go_container_subs
+        EXPORTING
+          container_name = 'CC_ALV2'.
+
+      CREATE OBJECT go_grid_subs
+        EXPORTING
+          i_parent = go_container_subs.
+
+      " 7. Field catalog
+      PERFORM build_fieldcat_ders_subs.
+
+      " 8. ALV'yi göster (artık gt_all_courses kullanıyoruz!)
+      CALL METHOD go_grid_subs->set_table_for_first_display
+        EXPORTING
+          i_structure_name = 'TY_COMBINED_COURSE'
+        CHANGING
+          it_outtab        = gt_all_courses
+          it_fieldcatalog  = gt_fcat_subs.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0109 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN '&SBS8'.
+      SELECT SINGLE tutor_name
+        INTO @DATA(lv_tutor_name)
+        FROM ztutor_tbl
+        WHERE tutor_id = @gv_tut_or_id.
+
+      IF lv_tutor_name IS INITIAL.
+        MESSAGE 'Öğretmen bulunamadı.' TYPE 'I'.
+        EXIT.
+      ENDIF.
+
+      SELECT SINGLE course_name
+        INTO @DATA(lv_course_name)
+        FROM zbk_course_tl
+        WHERE course_id = @gv_crs_id.
+
+      IF lv_course_name IS INITIAL.
+        MESSAGE 'Kurs bulunamadı.' TYPE 'I'.
+        EXIT.
+      ENDIF.
+
+      SELECT SINGLE *
+        FROM zyk_ders_tbl2
+        WHERE tutor_id = @gv_tut_or_id
+          AND course_id = @gv_crs_id
+        INTO @DATA(ls_exist).
+
+      IF sy-subrc = 0.
+        MESSAGE 'Bu öğretmen bu kursa zaten atanmış!' TYPE 'W'.
+        EXIT.
+      ENDIF.
+
+      DATA: wa_new_assignment TYPE zyk_ders_tbl2.
+
+      CLEAR wa_new_assignment.
+      wa_new_assignment-tutor_id  = gv_tut_or_id.
+      wa_new_assignment-course_id = gv_crs_id.
+
+      INSERT zyk_ders_tbl2 FROM wa_new_assignment.
+
+      IF sy-subrc = 0.
+        COMMIT WORK.
+        MESSAGE 'Öğretmen başarıyla kursa atandı.' TYPE 'I'.
+      ELSE.
+        MESSAGE 'Atama başarısız!' TYPE 'I'.
+        EXIT.
+      ENDIF.
+
+      CLEAR gt_tutor_courses_final.
+
+      SELECT a~tutor_id,
+             c~tutor_name,
+             a~course_id,
+             b~course_name,
+             b~course_credit
+        INTO TABLE @gt_tutor_courses_final
+        FROM zyk_ders_tbl2 AS a
+        INNER JOIN zbk_course_tl AS b ON a~course_id = b~course_id
+        INNER JOIN ztutor_tbl AS c ON a~tutor_id = c~tutor_id
+        WHERE a~tutor_id = @gv_tut_or_id.
+
+      IF gt_tutor_courses_final IS INITIAL.
+        MESSAGE 'Bu eğitmene ait kurs kaydı bulunamadı.' TYPE 'I'.
+        RETURN.
+      ENDIF.
+      IF go_container_subs IS BOUND.
+        CALL METHOD go_container_subs->free.
+        CLEAR go_container_subs.
+      ENDIF.
+      CREATE OBJECT go_container_subs
+        EXPORTING
+          container_name = 'CC_ALV4'.
+      CREATE OBJECT go_grid_subs
+        EXPORTING
+          i_parent = go_container_subs.
+      PERFORM build_fieldcat_tutor_course. " Bu prosedür senin fieldcatalog'u oluşturmalı
+      CALL METHOD go_grid_subs->set_table_for_first_display
+        EXPORTING
+          i_structure_name = 'TY_TUTOR_COURSE'
+        CHANGING
+          it_outtab        = gt_tutor_courses_final
+          it_fieldcatalog  = gt_fcat_subs.
+    WHEN '&LSTC1'.
+      IF NOT gv_tut_or_id IS INITIAL AND
+         NOT gv_tut_or_name IS INITIAL AND
+         gv_crs_id IS INITIAL AND
+         gv_crs_name IS INITIAL.
+        MESSAGE |Tutor ID girilen: { gv_tut_or_id }| TYPE 'I'.
+        CLEAR gt_tutor_courses_final.
+        SELECT a~tutor_id,
+               a~tutor_name,
+               a~course_id,
+               b~course_name,
+               b~course_credit
+          INTO TABLE @gt_tutor_courses_final
+          FROM zyk_ders_tbl2 AS a
+          INNER JOIN zbk_course_tl AS b ON a~course_id = b~course_id
+          WHERE a~tutor_id = @gv_tut_or_id.
+        IF gt_tutor_courses_final IS INITIAL.
+          MESSAGE 'Seçilen tutor için kurs kaydı bulunamadı.' TYPE 'I'.
+          RETURN.
+        ENDIF.
+        IF go_container_subs IS BOUND.
+          CALL METHOD go_container_subs->free.
+          CLEAR go_container_subs.
+        ENDIF.
+        CREATE OBJECT go_container_subs
+          EXPORTING
+            container_name = 'CC_ALV4'.
+
+        CREATE OBJECT go_grid_subs
+          EXPORTING
+            i_parent = go_container_subs.
+
+        " Field catalogu temizle ve doldur
+        CLEAR: gt_fcat_subs, gs_fcat_subs.
+
+        gs_fcat_subs-fieldname = 'COURSE_ID'.
+        gs_fcat_subs-coltext   = 'Course ID'.
+        APPEND gs_fcat_subs TO gt_fcat_subs.
+        CLEAR gs_fcat_subs.
+
+        gs_fcat_subs-fieldname = 'COURSE_NAME'.
+        gs_fcat_subs-coltext   = 'Course Name'.
+        APPEND gs_fcat_subs TO gt_fcat_subs.
+        CLEAR gs_fcat_subs.
+
+        gs_fcat_subs-fieldname = 'COURSE_CREDIT'.
+        gs_fcat_subs-coltext   = 'Credit'.
+        APPEND gs_fcat_subs TO gt_fcat_subs.
+        CLEAR gs_fcat_subs.
+
+        gs_fcat_subs-fieldname = 'TUTOR_ID'.
+        gs_fcat_subs-coltext   = 'Tutor ID'.
+        APPEND gs_fcat_subs TO gt_fcat_subs.
+        CLEAR gs_fcat_subs.
+
+        gs_fcat_subs-fieldname = 'TUTOR_NAME'.
+        gs_fcat_subs-coltext   = 'Tutor Name'.
+        APPEND gs_fcat_subs TO gt_fcat_subs.
+        CLEAR gs_fcat_subs.
+
+        " ALV grid'e veri ve field catalog gönder
+        CALL METHOD go_grid_subs->set_table_for_first_display
+          EXPORTING
+            i_structure_name = 'TY_COMBINED_TUTOR_COURSE'
+          CHANGING
+            it_outtab        = gt_tutor_courses_final
+            it_fieldcatalog  = gt_fcat_subs.
+      ELSE.
+        MESSAGE 'Sadece Tutor ID ve Tutor Name dolu olmalı, diğer alanlar boş olmalıdır!' TYPE 'I'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0111 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0112 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0113 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0114 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+MODULE user_command_0110 INPUT.
+  CASE sy-ucomm.
+    WHEN '&BACK' OR '&EXIT' OR '&CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
